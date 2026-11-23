@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Whirl & Wonder III: an interactive moonlit lake where movement creates ripples and moths, and circular gestures summon golden fish.">
+<title>Whirl & Wonder III — The Living Water</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;color:#f6f2f9;background:radial-gradient(ellipse at 50% 0,#29364c,#0b1528 68%);min-height:100vh}
+main{max-width:980px;margin:auto;padding:26px 15px 38px;text-align:center}.tag{letter-spacing:.24em;font-size:11px;color:#b6bcd5;text-transform:uppercase}
+h1{font:normal clamp(32px,5vw,49px) Georgia,serif;margin:11px 0 7px}.sub{font-size:14px;color:#c9cad7;line-height:1.55;margin:0 auto 20px}
+.scene{position:relative;overflow:hidden;border:1px solid #687793;border-radius:19px;background:#0a1932;touch-action:none;cursor:crosshair;box-shadow:0 20px 65px #0008;max-width:900px;margin:auto}
+canvas{display:block;width:100%;height:auto;touch-action:none}.hint{position:absolute;bottom:15px;left:8px;right:8px;font-size:12px;color:white;text-shadow:0 1px 7px #001;pointer-events:none}
+.controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:19px 0 13px}
+button{padding:12px 16px;border-radius:11px;border:1px solid #74839a;color:#f4f6fd;background:#233248;font-size:13px;cursor:pointer;font-weight:600}
+button:hover{background:#354b62}button:focus-visible{outline:3px solid #eec9a9;outline-offset:3px}
+#status{font-size:13px;color:#bfc9d7;min-height:24px}footer{font:italic 20px Georgia,serif;color:#d7bfae;margin-top:24px}
+@media(max-width:530px){main{padding:16px 7px 25px}.hint{font-size:10px}button{font-size:12px;padding:10px}}
+</style></head><body><main>
+<div class="tag">Whirl & Wonder · Chapter III</div><h1>The Living Water</h1>
+<p class="sub">Moonlight, golden fish &amp; tiny dancing moths.<br>Every movement awakens a little magic.</p>
+<div class="scene"><canvas id="lake" width="900" height="590" aria-label="Interactive lake: move your pointer to create ripples and moths, draw a circle on the water to summon a golden fish"></canvas>
+<div class="hint">Move to awaken the moths · Draw a circle on the water to summon a fish</div></div>
+<div class="controls"><button id="mothButton">Awaken moths</button><button id="fishButton">Summon goldfish</button><button id="calmButton">Calm the water</button></div>
+<div id="status" role="status" aria-live="polite">The lake is quiet beneath the stars.</div>
+<footer>A little magic, one movement at a time.</footer></main>
+<script>
+'use strict';
+(()=>{
+const cv=document.getElementById('lake'),c=cv.getContext('2d'),status=document.getElementById('status');
+const W=900,H=590,Y=275,T=Math.PI*2;
+let ripples=[],moths=[],fishes=[],trail=[],down=false,last=null,lastMotion=-100000,nextMoth=0,seed=3219;
+function rnd(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}
+const stars=Array.from({length:105},()=>({x:rnd()*W,y:rnd()*245,s:.3+rnd()*1.4,p:rnd()*T}));
+const reflections=Array.from({length:65},()=>({x:rnd()*W,y:Y+rnd()*(H-Y),p:rnd()*T}));
+function ell(x,y,rx,ry){c.beginPath();c.ellipse(x,y,Math.max(.1,rx),Math.max(.1,ry),0,0,T)}
+function grad(x,y,r,a,b){const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,a);g.addColorStop(1,b);return g}
+function ripple(x,y,p=1){ripples.push({x,y,p,t:performance.now()});if(ripples.length>85)ripples.shift()}
+function moth(x,y){moths.push({x,y,t:performance.now(),size:6+rnd()*9,phase:rnd()*T,vx:(rnd()-.5)*23,vy:-6-rnd()*15});if(moths.length>30)moths.shift()}
+function fish(x=460,y=425){const now=performance.now();fishes.push({x:Math.max(90,Math.min(810,x)),y:Math.max(335,Math.min(535,y)),t:now,dir:rnd()>.5?1:-1,p:rnd()*T});if(fishes.length>4)fishes.shift();for(let j=0;j<3;j++)ripple(x,y,1.7);status.textContent='A golden fish rises from the water.'}
+function landscape(t){
+let sky=c.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#0b1935');sky.addColorStop(.32,'#3e365a');sky.addColorStop(.47,'#a47891');sky.addColorStop(.48,'#25465c');sky.addColorStop(1,'#092338');c.fillStyle=sky;c.fillRect(0,0,W,H);
+c.fillStyle=grad(670,94,135,'#f8dec74b','#f8dec700');c.fillRect(530,0,280,220);
+c.fillStyle='#f7eddb';c.beginPath();c.arc(670,92,28,0,T);c.fill();
+stars.forEach(s=>{c.fillStyle='rgba(231,241,255,'+(.35+.55*(.5+.5*Math.sin(t*.001+s.p)))+')';ell(s.x,s.y,s.s,s.s);c.fill()});
+function mountain(base,amp,color,shift){c.fillStyle=color;c.beginPath();c.moveTo(0,Y+20);for(let x=0;x<=W;x+=8)c.lineTo(x,base+amp*Math.sin(x*.01+shift)+amp*.37*Math.sin(x*.024+shift));c.lineTo(W,Y+20);c.fill()}
+mountain(244,24,'#494d69',1);mountain(269,12,'#213849',3);
+c.fillStyle='#132e3d';for(let i=0;i<65;i++){let x=i*15,h=14+(i*29%32);c.beginPath();c.moveTo(x,Y-h);c.lineTo(x-9,Y+5);c.lineTo(x+9,Y+5);c.fill()}
+let water=c.createLinearGradient(0,Y,0,H);water.addColorStop(0,'#31536c');water.addColorStop(.5,'#153c50');water.addColorStop(1,'#09283a');c.fillStyle=water;c.fillRect(0,Y,W,H-Y);
+c.fillStyle=grad(670,Y+40,135,'#f8d3a45a','#f8d3a400');c.fillRect(500,Y,350,240);
+for(let i=0;i<43;i++){let y=Y+i*7,x=670+Math.sin(i*8+t*.0006)*i*.8,w=9+i*1.3;c.strokeStyle='rgba(250,220,189,'+Math.max(.018,.4-i*.008)+')';c.lineWidth=1.1;c.beginPath();c.moveTo(x-w/2,y);c.lineTo(x+w/2,y);c.stroke()}
+let quiet=Math.max(0,Math.min(1,(t-lastMotion)/2500));reflections.forEach(s=>{c.fillStyle='rgba(227,239,255,'+(.025+quiet*.4*(.5+.5*Math.sin(t*.001+s.p)))+')';ell(s.x,s.y,2.2,.7);c.fill()});
+}
+function drawRipples(t){ripples=ripples.filter(r=>t-r.t<2500);c.save();c.beginPath();c.rect(0,Y,W,H-Y);c.clip();ripples.forEach(r=>{let a=(t-r.t)/2500,R=10+a*(100+45*r.p);for(let i=0;i<3;i++){let rr=R-i*18;if(rr<0)continue;c.strokeStyle='rgba(182,233,244,'+Math.max(0,(1-a)*.44-i*.09)+')';c.lineWidth=1+r.p*.6;ell(r.x,r.y,rr,rr*.28);c.stroke()}});c.restore()}
+function drawMoths(t){moths=moths.filter(m=>t-m.t<4600);moths.forEach(m=>{let age=(t-m.t)/1000,alpha=Math.max(0,Math.min(1,age/.5,(4.6-age)/1.9));let x=m.x+m.vx*age+Math.sin(age*2.1+m.phase)*8,y=m.y+m.vy*age+Math.sin(age*2.7+m.phase)*7;let flap=.2+.8*Math.abs(Math.sin(t*.012+m.phase));c.save();c.translate(x,y);c.rotate(Math.sin(age+m.phase)*.25);c.globalAlpha=alpha;c.shadowColor='#d7beff';c.shadowBlur=13;let g=c.createLinearGradient(-15,-14,15,18);g.addColorStop(0,'#b8d8f2');g.addColorStop(.55,'#f5e4fa');g.addColorStop(1,'#ac9de3');c.fillStyle=g;c.strokeStyle='#fff9';c.lineWidth=.6;for(let s of [-1,1]){c.save();c.scale(s,1);let w=m.size*flap;c.beginPath();c.moveTo(0,0);c.bezierCurveTo(w*.4,-m.size*.9,w*1.4,-m.size*1.4,w*1.55,-m.size*.4);c.bezierCurveTo(w*1.6,m.size*.3,w*.4,m.size*.2,0,2);c.fill();c.stroke();c.beginPath();c.moveTo(0,1);c.bezierCurveTo(w*.9,-2,w*1.3,m.size*.75,w*.4,m.size*.8);c.quadraticCurveTo(0,m.size*.55,0,1);c.fill();c.restore()}c.shadowBlur=0;c.fillStyle='#f5edff';ell(0,1,1.15,m.size*.52);c.fill();c.strokeStyle='#ddd6ff';c.lineWidth=.5;c.beginPath();c.moveTo(0,-3);c.quadraticCurveTo(-4,-m.size,-6,-m.size);c.moveTo(0,-3);c.quadraticCurveTo(4,-m.size,6,-m.size);c.stroke();c.restore()})}
+function drawFish(t){fishes=fishes.filter(f=>t-f.t<11500);fishes.forEach(f=>{let age=t-f.t,fade=Math.max(0,Math.min(1,age/900,(11500-age)/1900));let x=f.x+f.dir*Math.sin(age*.0006)*38,y=f.y-18*Math.sin(Math.min(1,age/1500)*Math.PI/2)+Math.sin(age*.0017+f.p)*6;c.save();c.globalAlpha=fade;c.translate(x,y);c.scale(f.dir,1);c.shadowColor='#ffc86e';c.shadowBlur=17;let wag=Math.sin(t*.012+f.p)*9;let g=c.createLinearGradient(-70,-30,32,28);g.addColorStop(0,'#d97938');g.addColorStop(.55,'#ffcd7b');g.addColorStop(1,'#ffe8ad');c.fillStyle=g;c.beginPath();c.moveTo(-31,0);c.bezierCurveTo(-52,-21,-64+wag,-40,-77+wag,-37);c.bezierCurveTo(-58,-13,-65,4,-77,30);c.bezierCurveTo(-44,24,-37,10,-31,0);c.fill();c.strokeStyle='#ffe2a07d';c.lineWidth=.7;for(let i=0;i<5;i++){c.beginPath();c.moveTo(-34,0);c.quadraticCurveTo(-55,i*7-15,-74+wag*.7,i*14-29);c.stroke()}c.fillStyle='#f8bf68';c.beginPath();c.moveTo(-36,0);c.bezierCurveTo(-16,-21,20,-22,35,-2);c.bezierCurveTo(18,21,-14,24,-36,0);c.fill();c.fillStyle='#ffe7a1';c.beginPath();c.moveTo(-18,-11);c.quadraticCurveTo(-3,-40,17,-16);c.closePath();c.fill();c.fillStyle='#f6a84eaf';c.beginPath();c.moveTo(-7,9);c.quadraticCurveTo(-12,30,13,33);c.lineTo(8,8);c.fill();c.shadowBlur=0;c.fillStyle='#293342';ell(23,-6,3,3);c.fill();c.fillStyle='white';ell(24,-7,1,1);c.fill();c.restore()})}
+function foreground(t){for(let i=0;i<22;i++){let x=i<11?i*13:W-(i-11)*13,h=28+i*19%44;c.fillStyle='#0b3036';c.beginPath();c.moveTo(x-4,H);c.quadraticCurveTo(x+Math.sin(t*.001+i)*9,H-h*.6,x+8*Math.sin(t*.001+i),H-h);c.lineTo(x+4,H);c.fill()}for(let p of [{x:95,y:535},{x:770,y:542}]){c.fillStyle='#296c5b';ell(p.x,p.y,28,10);c.fill();c.fillStyle='#e9b2cf';for(let j=0;j<6;j++){let a=j*T/6;ell(p.x+9*Math.cos(a),p.y-8+5*Math.sin(a),8,5);c.fill()}c.fillStyle='#f4d89d';ell(p.x,p.y-8,4,3);c.fill()}}
+function render(t){landscape(t);drawRipples(t);drawFish(t);drawMoths(t);foreground(t);requestAnimationFrame(render)}
+function point(e){let r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height,t:performance.now()}}
+function circleCheck(){if(trail.length<15)return;let cx=0,cy=0,length=0,turn=0;trail.forEach(p=>{cx+=p.x;cy+=p.y});cx/=trail.length;cy/=trail.length;for(let i=1;i<trail.length;i++){let a=trail[i-1],b=trail[i],a1=Math.atan2(a.y-cy,a.x-cx),a2=Math.atan2(b.y-cy,b.x-cx),d=a2-a1;while(d>Math.PI)d-=T;while(d< -Math.PI)d+=T;turn+=d;length+=Math.hypot(b.x-a.x,b.y-a.y)}let rad=trail.reduce((n,p)=>n+Math.hypot(p.x-cx,p.y-cy),0)/trail.length;let gap=Math.hypot(trail[0].x-trail[trail.length-1].x,trail[0].y-trail[trail.length-1].y);if(Math.abs(turn)>T*.8&&rad>26&&length>170&&gap<rad*1.5){fish(cx,Math.max(Y+55,cy));trail=[]}}
+function move(p){if(last){let d=Math.hypot(p.x-last.x,p.y-last.y),dt=Math.max(12,p.t-last.t),v=d/dt;if(d>3){lastMotion=p.t;if(p.t>nextMoth&&p.y>90&&p.y<Y+130){moth(p.x+(rnd()-.5)*40,Math.min(Y-15,p.y-35-rnd()*65));nextMoth=p.t+220;status.textContent='Tiny moths appear and fade with your movement.'}if(p.y>Y){if(!last.rt||p.t-last.rt>75){ripple(p.x,p.y,Math.min(3,.7+v));p.rt=p.t}else p.rt=last.rt;if(v>1.35)ripple((p.x+last.x)/2,(p.y+last.y)/2,Math.min(3,1+v))}}}last=p;if(down&&p.y>Y){trail.push(p);if(trail.length>125)trail.shift();circleCheck()}}
+cv.addEventListener('pointerdown',e=>{down=true;trail=[];last=null;cv.setPointerCapture(e.pointerId);move(point(e))});cv.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||down)move(point(e))});const stop=()=>{down=false;trail=[];last=null};cv.addEventListener('pointerup',stop);cv.addEventListener('pointercancel',stop);cv.addEventListener('pointerleave',()=>{if(!down)last=null});
+document.getElementById('mothButton').onclick=()=>{for(let i=0;i<8;i++)moth(220+rnd()*470,105+rnd()*120);lastMotion=performance.now();status.textContent='A small cloud of moths appears, then fades.'};document.getElementById('fishButton').onclick=()=>fish();document.getElementById('calmButton').onclick=()=>{ripples=[];moths=[];fishes=[];trail=[];last=null;status.textContent='The lake returns to stillness.'};requestAnimationFrame(render);
+})();
+</script></body></html>
