@@ -47,8 +47,14 @@ function moth(x,y){moths.push({x,y,t:performance.now(),size:6+rnd()*9,phase:rnd(
 function fish(x=460,y=425){const now=performance.now();fishes.push({x:Math.max(90,Math.min(810,x)),y:Math.max(335,Math.min(535,y)),t:now,dir:rnd()>.5?1:-1,p:rnd()*T});if(fishes.length>4)fishes.shift();for(let j=0;j<3;j++)ripple(x,y,1.7);status.textContent='A golden fish rises from the water.'}
 function landscape(t){
 let sky=c.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#0b1935');sky.addColorStop(.32,'#3e365a');sky.addColorStop(.47,'#a47891');sky.addColorStop(.48,'#25465c');sky.addColorStop(1,'#092338');c.fillStyle=sky;c.fillRect(0,0,W,H);
-c.fillStyle=grad(670,94,135,'#f8dec74b','#f8dec700');c.fillRect(530,0,280,220);
-c.fillStyle='#f7eddb';c.beginPath();c.arc(670,92,28,0,T);c.fill();
+// Gentle, slow breathing of the moonlight (no flashing).
+const moonPulse=.5+.5*Math.sin(t*.00105);
+const haloRadius=120+moonPulse*20;
+c.fillStyle=grad(670,94,haloRadius,`rgba(248,222,199,${.17+moonPulse*.09})`,'rgba(248,222,199,0)');
+c.fillRect(515,0,310,250);
+c.save();c.shadowColor='#fff2df';c.shadowBlur=9+moonPulse*11;
+c.fillStyle=`rgba(255,${Math.round(239+moonPulse*6)},${Math.round(222+moonPulse*8)},1)`;
+c.beginPath();c.arc(670,92,28*(1+moonPulse*.012),0,T);c.fill();c.restore();
 stars.forEach(s=>{c.fillStyle='rgba(231,241,255,'+(.35+.55*(.5+.5*Math.sin(t*.001+s.p)))+')';ell(s.x,s.y,s.s,s.s);c.fill()});
 function mountain(base,amp,color,shift){c.fillStyle=color;c.beginPath();c.moveTo(0,Y+20);for(let x=0;x<=W;x+=8)c.lineTo(x,base+amp*Math.sin(x*.01+shift)+amp*.37*Math.sin(x*.024+shift));c.lineTo(W,Y+20);c.fill()}
 mountain(244,24,'#494d69',1);mountain(269,12,'#213849',3);
@@ -203,7 +209,86 @@ function drawLilies(t){
 }
 function drawRipples(t){ripples=ripples.filter(r=>t-r.t<2500);c.save();c.beginPath();c.rect(0,Y,W,H-Y);c.clip();ripples.forEach(r=>{let a=(t-r.t)/2500,R=10+a*(100+45*r.p);for(let i=0;i<3;i++){let rr=R-i*18;if(rr<0)continue;c.strokeStyle='rgba(182,233,244,'+Math.max(0,(1-a)*.44-i*.09)+')';c.lineWidth=1+r.p*.6;ell(r.x,r.y,rr,rr*.28);c.stroke()}});c.restore()}
 function drawMoths(t){moths=moths.filter(m=>t-m.t<4600);moths.forEach(m=>{let age=(t-m.t)/1000,alpha=Math.max(0,Math.min(1,age/.5,(4.6-age)/1.9));let x=m.x+m.vx*age+Math.sin(age*2.1+m.phase)*8,y=m.y+m.vy*age+Math.sin(age*2.7+m.phase)*7;let flap=.2+.8*Math.abs(Math.sin(t*.012+m.phase));let hue=.5+.5*Math.sin(t*.003+m.phase);c.save();c.translate(x,y);c.rotate(Math.sin(age+m.phase)*.25);c.globalAlpha=alpha;c.shadowColor=hue>.5?'#aee8ff':'#d7beff';c.shadowBlur=14;let g=c.createLinearGradient(-15,-14,15,18);g.addColorStop(0,'#b8d8f2');g.addColorStop(.55,'#f5e4fa');g.addColorStop(1,'#ac9de3');c.fillStyle=g;c.strokeStyle='#fff9';c.lineWidth=.6;for(let s of [-1,1]){c.save();c.scale(s,1);let w=m.size*flap;c.beginPath();c.moveTo(0,0);c.bezierCurveTo(w*.4,-m.size*.9,w*1.4,-m.size*1.4,w*1.55,-m.size*.4);c.bezierCurveTo(w*1.6,m.size*.3,w*.4,m.size*.2,0,2);c.fill();c.stroke();c.beginPath();c.moveTo(0,1);c.bezierCurveTo(w*.9,-2,w*1.3,m.size*.75,w*.4,m.size*.8);c.quadraticCurveTo(0,m.size*.55,0,1);c.fill();c.restore()}c.globalCompositeOperation='screen';c.strokeStyle=`rgba(${155+80*hue|0},${210+25*hue|0},255,.22)`;c.lineWidth=.9;for(let s of [-1,1]){c.save();c.scale(s,1);let w=m.size*flap*1.08;c.beginPath();c.moveTo(0,0);c.bezierCurveTo(w*.4,-m.size*.9,w*1.4,-m.size*1.4,w*1.55,-m.size*.4);c.bezierCurveTo(w*1.6,m.size*.3,w*.4,m.size*.2,0,2);c.stroke();c.restore()}c.shadowBlur=0;c.globalCompositeOperation='source-over';c.fillStyle='#f5edff';ell(0,1,1.15,m.size*.52);c.fill();c.strokeStyle='#ddd6ff';c.lineWidth=.5;c.beginPath();c.moveTo(0,-3);c.quadraticCurveTo(-4,-m.size,-6,-m.size);c.moveTo(0,-3);c.quadraticCurveTo(4,-m.size,6,-m.size);c.stroke();c.restore()})}
-function drawFish(t){fishes=fishes.filter(f=>t-f.t<11500);fishes.forEach(f=>{let age=t-f.t,fade=Math.max(0,Math.min(1,age/900,(11500-age)/1900));let x=f.x+f.dir*Math.sin(age*.0006)*38,y=f.y-18*Math.sin(Math.min(1,age/1500)*Math.PI/2)+Math.sin(age*.0017+f.p)*6;c.save();c.globalAlpha=fade;c.translate(x,y);c.scale(f.dir,1);c.shadowColor='#ffc86e';c.shadowBlur=17;let wag=Math.sin(t*.012+f.p)*9;let g=c.createLinearGradient(-70,-30,32,28);g.addColorStop(0,'#d97938');g.addColorStop(.55,'#ffcd7b');g.addColorStop(1,'#ffe8ad');c.fillStyle=g;c.beginPath();c.moveTo(-31,0);c.bezierCurveTo(-52,-21,-64+wag,-40,-77+wag,-37);c.bezierCurveTo(-58,-13,-65,4,-77,30);c.bezierCurveTo(-44,24,-37,10,-31,0);c.fill();c.strokeStyle='#ffe2a07d';c.lineWidth=.7;for(let i=0;i<5;i++){c.beginPath();c.moveTo(-34,0);c.quadraticCurveTo(-55,i*7-15,-74+wag*.7,i*14-29);c.stroke()}c.fillStyle='#f8bf68';c.beginPath();c.moveTo(-36,0);c.bezierCurveTo(-16,-21,20,-22,35,-2);c.bezierCurveTo(18,21,-14,24,-36,0);c.fill();c.fillStyle='#ffe7a1';c.beginPath();c.moveTo(-18,-11);c.quadraticCurveTo(-3,-40,17,-16);c.closePath();c.fill();c.fillStyle='#f6a84eaf';c.beginPath();c.moveTo(-7,9);c.quadraticCurveTo(-12,30,13,33);c.lineTo(8,8);c.fill();let pulse=Math.max(0,1-age/1700);if(pulse>0){c.save();c.globalCompositeOperation='screen';c.strokeStyle=`rgba(130,220,255,${.18*pulse})`;c.lineWidth=2.2;ell(-4,0,52-14*pulse,15-4*pulse);c.stroke();c.strokeStyle=`rgba(220,170,255,${.15*pulse})`;c.lineWidth=1.4;ell(-4,0,60-10*pulse,19-3*pulse);c.stroke();c.restore()}c.globalCompositeOperation='screen';c.strokeStyle='rgba(170,235,255,.15)';c.lineWidth=1;c.beginPath();c.moveTo(-30,-1);c.quadraticCurveTo(-5,-16,28,-3);c.stroke();c.globalCompositeOperation='source-over';c.shadowBlur=0;c.fillStyle='#293342';ell(23,-6,3,3);c.fill();c.fillStyle='white';ell(24,-7,1,1);c.fill();c.restore()})}
+function drawFish(t){
+ fishes=fishes.filter(f=>t-f.t<11500);
+ fishes.forEach(f=>{
+  const age=t-f.t,fade=Math.max(0,Math.min(1,age/900,(11500-age)/1900));
+  const turn=age*.00062;
+  const x=f.x+f.dir*Math.sin(turn)*72;
+  const y=f.y-18*Math.sin(Math.min(1,age/1500)*Math.PI/2)+Math.sin(age*.0017+f.p)*6;
+  const facing=f.dir*Math.cos(turn);
+  const sideways=Math.abs(Math.cos(turn));
+  const frontal=1-sideways;
+  const sign=facing<0?-1:1;
+  const wag=Math.sin(t*.012+f.p)*9;
+  c.save();c.globalAlpha=fade;c.translate(x,y);
+  c.rotate(.055*Math.sin(turn*2+f.p));
+  // Fin and tail behind the body, their width reduces naturally as the fish turns.
+  c.save();c.scale(sign*Math.max(.34,sideways),1);
+  c.shadowColor='#ffc86e';c.shadowBlur=15;
+  const tail=c.createLinearGradient(-82,-31,-26,28);
+  tail.addColorStop(0,'#f7b457');tail.addColorStop(.55,'#e89848');tail.addColorStop(1,'#ffdb87');
+  c.fillStyle=tail;c.beginPath();c.moveTo(-29,0);
+  c.bezierCurveTo(-51,-20,-67+wag,-40,-78+wag,-37);
+  c.bezierCurveTo(-58,-14,-64,5,-78,30);
+  c.bezierCurveTo(-48,23,-37,9,-29,0);c.fill();
+  c.strokeStyle='rgba(255,232,167,.55)';c.lineWidth=.75;
+  for(let i=0;i<5;i++){c.beginPath();c.moveTo(-34,0);c.quadraticCurveTo(-57,i*7-15,-74+wag*.7,i*14-29);c.stroke()}
+  c.restore();
+  // A round silhouette is maintained through the turn, instead of scaling it to a line.
+  const bodyWidth=16+24*sideways;
+  const bodyHeight=19+2*frontal;
+  const b=c.createRadialGradient(-bodyWidth*.34,-bodyHeight*.5,1,0,1,bodyWidth*1.35);
+  b.addColorStop(0,'#fff5c3');b.addColorStop(.25,'#ffdc91');
+  b.addColorStop(.60,'#efb25f');b.addColorStop(.85,'#c57839');b.addColorStop(1,'#784431');
+  c.shadowColor='#ffc36b';c.shadowBlur=12;
+  c.fillStyle=b;
+  c.beginPath();
+  c.moveTo(-bodyWidth*.92,0);
+  c.bezierCurveTo(-bodyWidth*.8,-bodyHeight*.85,bodyWidth*.35,-bodyHeight*1.05,bodyWidth*.93,-bodyHeight*.25);
+  c.quadraticCurveTo(bodyWidth*1.15,1,bodyWidth*.93,bodyHeight*.35);
+  c.bezierCurveTo(bodyWidth*.28,bodyHeight*1.02,-bodyWidth*.8,bodyHeight*.95,-bodyWidth*.92,0);
+  c.closePath();c.fill();
+  // Glossy bulging belly and darker curved edge give the fish visible thickness.
+  c.shadowBlur=0;
+  c.save();c.globalAlpha*=.62+.25*frontal;
+  const belly=c.createRadialGradient(-bodyWidth*.2,-3,1,3,6,bodyWidth);
+  belly.addColorStop(0,'rgba(255,245,192,.9)');
+  belly.addColorStop(.55,'rgba(255,198,107,.48)');
+  belly.addColorStop(1,'rgba(130,64,40,0)');
+  c.fillStyle=belly;ell(0,3,bodyWidth*.88,bodyHeight*.72);c.fill();c.restore();
+  // When seen head-on, both cheeks and eyes come into view.
+  if(frontal>.025){
+   c.save();c.globalAlpha*=Math.min(1,frontal*1.7);
+   c.strokeStyle='rgba(255,244,197,.8)';c.lineWidth=1.4;
+   c.beginPath();c.ellipse(0,0,bodyWidth*.77,bodyHeight*.91,0,Math.PI*1.12,Math.PI*1.88);c.stroke();
+   c.fillStyle='#613e31';
+   ell(-bodyWidth*.57,-4,2.7,3.2);c.fill();ell(bodyWidth*.57,-4,2.7,3.2);c.fill();
+   c.fillStyle='#fff9da';ell(-bodyWidth*.57-.6,-5,.8,.85);c.fill();ell(bodyWidth*.57-.6,-5,.8,.85);c.fill();
+   c.strokeStyle='rgba(133,77,50,.6)';c.lineWidth=1;
+   c.beginPath();c.moveTo(-3.5,7);c.quadraticCurveTo(0,10,3.5,7);c.stroke();
+   c.restore();
+  }
+  // Side-view eyes and fins gradually fade while the fish faces the viewer.
+  if(sideways>.05){
+   c.save();c.globalAlpha*=Math.min(1,sideways*1.7);
+   c.scale(sign,1);
+   c.fillStyle='#ffe7a1';c.beginPath();
+   c.moveTo(-12,-bodyHeight*.65);c.quadraticCurveTo(0,-39,16,-bodyHeight*.68);c.closePath();c.fill();
+   c.fillStyle='rgba(237,151,70,.85)';c.beginPath();
+   c.moveTo(-7,10);c.quadraticCurveTo(-12,29,14,30);c.lineTo(8,9);c.fill();
+   c.fillStyle='#293342';ell(bodyWidth*.61,-6,3,3);c.fill();
+   c.fillStyle='white';ell(bodyWidth*.61+.8,-7,1,1);c.fill();c.restore();
+  }
+  const pulse=Math.max(0,1-age/1700);
+  if(pulse>0){c.save();c.globalCompositeOperation='screen';
+   c.strokeStyle=`rgba(130,220,255,${.18*pulse})`;c.lineWidth=2.2;
+   ell(0,0,bodyWidth+16,bodyHeight*.82);c.stroke();
+   c.strokeStyle=`rgba(220,170,255,${.15*pulse})`;c.lineWidth=1.4;
+   ell(0,0,bodyWidth+24,bodyHeight);c.stroke();c.restore();}
+  c.restore();
+ });
+}
 function foreground(t){for(let i=0;i<22;i++){let x=i<11?i*13:W-(i-11)*13,h=28+i*19%44;c.fillStyle='#0b3036';c.beginPath();c.moveTo(x-4,H);c.quadraticCurveTo(x+Math.sin(t*.001+i)*9,H-h*.6,x+8*Math.sin(t*.001+i),H-h);c.lineTo(x+4,H);c.fill()}for(let p of [{x:95,y:535},{x:770,y:542}]){c.fillStyle='#296c5b';ell(p.x,p.y,28,10);c.fill();c.fillStyle='#e9b2cf';for(let j=0;j<6;j++){let a=j*T/6;ell(p.x+9*Math.cos(a),p.y-8+5*Math.sin(a),8,5);c.fill()}c.fillStyle='#f4d89d';ell(p.x,p.y-8,4,3);c.fill()}}
 function render(t){landscape(t);moonlight(t);drawHologram(t);drawRipples(t);drawFish(t);drawMoths(t);drawLilies(t);foreground(t);requestAnimationFrame(render)}
 function point(e){let r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height,t:performance.now()}}
